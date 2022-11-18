@@ -36,8 +36,12 @@ async def on_message(message):
 				"OFF": "Free",
 				"BROKEN": "Broken"
 			}
-			washers = [laundry_status_mapping[x] for x in data["washers"]["status"]]
-			dryers = [laundry_status_mapping[x] for x in data["dryers"]["status"]]
+			washerStatus = [laundry_status_mapping[x] for x in data["washers"]["status"]]
+			washerFor = [int(x/1000/60) for x in data["washers"]["lastTransition"]]
+			dryerStatus = [laundry_status_mapping[x] for x in data["dryers"]["status"]]
+			dryerFor = [int(x/1000/60) for x in data["washers"]["lastTransition"]]
+			washers = [f'{x[0]} for {x[1]}m' if x in {"Busy", "Free"} else x[0] for x in zip(washerStatus, washerFor)]
+			dryers = [f'{x[0]} for {x[1]}m' if x in {"Busy", "Free"} else x[0] for x in zip(dryerStatus, dryerFor)]
 			await message.channel.send('Washers: ' + ', '.join(washers) + '\n' + 'Dryers: ' + ', '.join(dryers))
 
 client.run(TOKEN)
