@@ -19,7 +19,7 @@ def timeToString(time):
 
 
 def getStatus():
-    with urllib.request.urlopen("http://laundry.mit.edu/watch") as url:
+    with urllib.request.urlopen("https://laundry.mit.edu/watch") as url:
         data = json.loads(url.read().decode())
         laundry_status_mapping = {
             "ON": "Busy",
@@ -60,23 +60,26 @@ async def statusChanged(type, index):
 
 async def updateStatus():
     global washerLastStatus, dryerLastStatus
-    with urllib.request.urlopen("http://laundry.mit.edu/watch") as url:
-        data = json.loads(url.read().decode())
+    try: 
+        with urllib.request.urlopen("https://laundry.mit.edu/watch") as url:
+            data = json.loads(url.read().decode())
 
-        washerStatus = [x
-                        for x in data["washers"]["status"]]
-        dryerStatus = [x
-                       for x in data["dryers"]["status"]]
-        for i, (washerNow, washerBefore) in enumerate(zip(washerStatus, washerLastStatus)):
-            if washerNow == "OFF" and washerBefore != "OFF":
-                await statusChanged("washer", i)
-        for i, (dryerNow, dryerBefore) in enumerate(zip(dryerStatus, dryerLastStatus)):
-            if dryerNow == "OFF" and dryerBefore != "OFF":
-                await statusChanged("dryer", i)
-        washerLastStatus = washerStatus
-        dryerLastStatus = dryerStatus
-        await asyncio.sleep(15)
-        await updateStatus()
+            washerStatus = [x
+                            for x in data["washers"]["status"]]
+            dryerStatus = [x
+                        for x in data["dryers"]["status"]]
+            for i, (washerNow, washerBefore) in enumerate(zip(washerStatus, washerLastStatus)):
+                if washerNow == "OFF" and washerBefore != "OFF":
+                    await statusChanged("washer", i)
+            for i, (dryerNow, dryerBefore) in enumerate(zip(dryerStatus, dryerLastStatus)):
+                if dryerNow == "OFF" and dryerBefore != "OFF":
+                    await statusChanged("dryer", i)
+            washerLastStatus = washerStatus
+            dryerLastStatus = dryerStatus
+    except:
+        pass
+    await asyncio.sleep(5)
+    await updateStatus()
 
 
 def split(s, delim):
@@ -138,6 +141,6 @@ async def on_message(message):
         for machines in machinesGroups:
             channelWaiting.append((message.channel, message.author, machines))
         if len(machinesGroups) > 0:
-            await message.channel.send("will notify you!")
+            await message.channel.send(f"will notify you for {' '.join(['{'+', '.join([y[0]+str(y[1]+1) for y in x])+'}' for x in machinesGroups])}!")
 
 client.run(TOKEN)
