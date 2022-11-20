@@ -143,7 +143,7 @@ async def on_message(message):
 
     content = message.content.lower()
 
-    keywords = ["laundry ", "?", "? ", "laundry,", "laundry, "]
+    keywords = ["laundry ", "?", "? ", "laundry,", "laundry, ", "quinn ", "quinn,", "quinn, "]
 
     for key in keywords:
         if content.startswith(f"{key}list") or content.startswith(f"{key}status"):
