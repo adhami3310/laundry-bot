@@ -90,9 +90,6 @@ async def updateStatus():
     except:
         print("failed")
         pass
-    await asyncio.sleep(5)
-    await updateStatus()
-
 
 def split(s, delim):
     return list(filter(None, s.split(delim)))
@@ -133,9 +130,10 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-    await updateStatus()
     print(f'{client.user} has connected to Discord!')
-
+    while True:
+        await updateStatus()
+        await asyncio.sleep(15)
 
 @client.event
 async def on_message(message):
