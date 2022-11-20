@@ -10,7 +10,7 @@ import json
 import discord
 from datetime import datetime
 
-helpMessage = """Hello Randomites! I wish you easy and quick laundry. I hope I'm here to help with that! I respond to 'laundry, ' and '?'. Here's a list of my commands:
+helpMessage = """Hello Randomites! I'm Quinn the Laundry Bot. I'm here to make your laundry managing easier! My prefixes are 'quinn', 'laundry', and '?'. Here's a list of my commands:
 -Say 'laundry, [list/status]' to get the status of the laundry machines currently.
 -Say 'laundry, [notify/remind] group1 group2 ...' to get pinged for each group when the first machine in that group turns free.
 Each group can be of the format: machine1,machine2,... where machine is [washers/dryerys/washerX/dryerX] using 1-indexing.
