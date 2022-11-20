@@ -8,7 +8,16 @@ import subprocess
 import urllib.request
 import json
 import discord
+from datetime import datetime
 
+helpMessage = """Hello Randomites! I wish you easy and quick laundry. I hope I'm here to help with that! I respond to 'laundry, ' and '?'. Here's a list of my commands:
+-Say 'laundry, [list/status]' to get the status of the laundry machines currently.
+-Say 'laundry, [notify/remind] group1 group2 ...' to get pinged for each group when the first machine in that group turns free.
+Each group can be of the format: machine1,machine2,... where machine is [washers/dryerys/washerX/dryerX] using 1-indexing.
+Note that you can use this command with machines that are currently free to use. It will just remind you whenever they become free again. This could be useful in case you know the machine is going to turn on soon.
+-Say 'laundry, cancel' to cancel all your notifications.
+-Say 'laundry, help' to get this message.
+Let Adhami know if you discover any bugs or have any suggestions!"""
 
 def timeToString(time):
     if time < 60:
@@ -43,7 +52,7 @@ def getStatus():
 
 washerLastStatus = ["UNKNOWN", "UNKNOWN", "UNKNOWN"]
 dryerLastStatus = ["UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN"]
-
+lastUpdate = datetime.now()
 channelWaiting = []
 
 
@@ -59,7 +68,7 @@ async def statusChanged(type, index):
 
 
 async def updateStatus():
-    global washerLastStatus, dryerLastStatus
+    global washerLastStatus, dryerLastStatus, lastUpdate
     try: 
         with urllib.request.urlopen("https://laundry.mit.edu/watch") as url:
             data = json.loads(url.read().decode())
@@ -76,7 +85,10 @@ async def updateStatus():
                     await statusChanged("dryer", i)
             washerLastStatus = washerStatus
             dryerLastStatus = dryerStatus
+            lastUpdate = datetime.now()
+            print("queried")
     except:
+        print("failed")
         pass
     await asyncio.sleep(5)
     await updateStatus()
@@ -127,20 +139,40 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    global channelWaiting
     if message.author == client.user:
         return
 
-    if message.content.startswith("laundry, list"):
-        washers, dryers = getStatus()
-        washers = [x.replace("Free", "**Free**") for x in washers]
-        dryers = [x.replace("Free", "**Free**") for x in dryers]
-        await message.channel.send('Washers: ' + ', '.join(washers) + '\n' + 'Dryers: ' + ', '.join(dryers))
-    elif message.content.startswith("laundry, notify"):
-        machinesGroups = interpretRequest(
-            message.content[len("laundry, notify"):])
-        for machines in machinesGroups:
-            channelWaiting.append((message.channel, message.author, machines))
-        if len(machinesGroups) > 0:
-            await message.channel.send(f"will notify you for {' '.join(['{'+', '.join([y[0]+str(y[1]+1) for y in x])+'}' for x in machinesGroups])}!")
+    content = message.content.lower()
+
+    keywords = ["laundry ", "?", "? ", "laundry,", "laundry, "]
+
+    for key in keywords:
+        if content.startswith(f"{key}list") or content.startswith(f"{key}status"):
+            washers, dryers = getStatus()
+            washers = [x.replace("Free", "**Free**") for x in washers]
+            dryers = [x.replace("Free", "**Free**") for x in dryers]
+            await message.channel.send('Washers: ' + ', '.join(washers) + '\n' + 'Dryers: ' + ', '.join(dryers))
+            break
+        elif content.startswith(f"{key}notify") or content.startswith(f"{key}remind"):
+            machinesGroups = interpretRequest(
+                content[len(f"{key}notify"):])
+            for machines in machinesGroups:
+                channelWaiting.append((message.channel, message.author, machines))
+            if len(machinesGroups) > 0:
+                await message.channel.send(f"will notify you for {' '.join(['{'+', '.join([y[0]+str(y[1]+1) for y in x])+'}' for x in machinesGroups])}!")
+            break
+        elif content.startswith(f"{key}last"):
+            current = datetime.now()
+            await message.channel.send(f"last successful update was {(current-lastUpdate).total_seconds()} seconds ago")
+            break
+        elif content.startswith(f"{key}cancel"):
+            channelWaiting = [x for x in channelWaiting if x[1] != message.author]
+            await message.channel.send("all notifications cancelled!")
+            break
+        elif content.startswith(f"{key}help"):
+            await message.channel.send(helpMessage)
+            break
+        
 
 client.run(TOKEN)
