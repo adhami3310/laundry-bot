@@ -28,6 +28,26 @@ def timeToString(time):
         return f'{int(time/60)}h'
     return f'{int(time/60/24)}'
 
+subscribers = {
+    ('washer', 0): set(),
+    ('washer', 1): set(),
+    ('washer', 2): set(),
+    ('dryer', 0): set(),
+    ('dryer', 1): set(),
+    ('dryer', 2): set(),
+    ('dryer', 3): set()
+}
+
+def subscribe(channel, group):
+    global subscribers
+    for (type, index) in group:
+        subscribers[(type, index)].add(channel)
+
+def unsubscribe(channel, group):
+    global subscribers
+    for (type, index) in group:
+        if channel in subscribers[(type, index)]:
+            subscribers[(type, index)].remove(channel)
 
 def getStatus():
     with urllib.request.urlopen("https://laundry.mit.edu/watch") as url:
@@ -69,6 +89,11 @@ async def statusChanged(type, index):
             newChannelWaiting.append((channel, author, machines))
     channelWaiting = newChannelWaiting
 
+async def statusChangedAnything(type, index, newStatus):
+    global subscribers
+    print(f"{type}#{index} is now {newStatus}!")
+    for channel in subscribers[(type, index)]:
+        await channel.send(f'{type}#{index+1} is {newStatus}')
 
 async def updateStatus():
     global washerLastStatus, dryerLastStatus, lastUpdate
@@ -81,9 +106,13 @@ async def updateStatus():
             dryerStatus = [x
                            for x in data["dryers"]["status"]]
             for i, (washerNow, washerBefore) in enumerate(zip(washerStatus, washerLastStatus)):
+                if washerNow != washerBefore:
+                    await statusChangedAnything("washer", i, washerNow)
                 if washerNow == "OFF" and washerBefore != "OFF":
                     await statusChanged("washer", i)
             for i, (dryerNow, dryerBefore) in enumerate(zip(dryerStatus, dryerLastStatus)):
+                if dryerNow != dryerBefore:
+                    await statusChangedAnything("dryer", i, dryerNow)
                 if dryerNow == "OFF" and dryerBefore != "OFF":
                     await statusChanged("dryer", i)
             washerLastStatus = washerStatus
@@ -175,6 +204,33 @@ async def on_message(message):
                 x for x in channelWaiting if x[1] != message.author]
             await message.channel.send("all notifications cancelled!")
             break
+        elif content.startswith(f"{key}subscribe"):
+            machinesGroups = interpretRequest(
+                content[len(f"{key}subscribe"):])
+            for machines in machinesGroups:
+                subscribe(message.channel, machines)
+            subscribed = []
+            for machine, channels in subscribers.items():
+                if message.channel in channels:
+                    subscribed.append(f'{machine[0]}#{machine[1]+1}')
+            if subscribed:
+                await message.channel.send(f"currently subscribed to {', '.join(subscribed)}")
+            else:
+                await message.channel.send(f"currently subscribed to nothing!")
+        elif content.startswith(f"{key}unsubscribe"):
+            machinesGroups = interpretRequest(
+                content[len(f"{key}unsubscribe"):])
+            for machines in machinesGroups:
+                unsubscribe(message.channel, machines)
+            subscribed = []
+            for machine, channels in subscribers.items():
+                if message.channel in channels:
+                    subscribed.append(f'{machine[0]}#{machine[1]+1}')
+            if subscribed:
+                await message.channel.send(f"currently subscribed to {', '.join(subscribed)}")
+            else:
+                await message.channel.send(f"currently subscribed to nothing!")
+
         elif content.startswith(f"{key}show"):
             emojis = {'Unknown': '<:laundry_unknown:1044357960740114592>',
                       'Busy': '<:laundry_cross:1044357959876083722>',
