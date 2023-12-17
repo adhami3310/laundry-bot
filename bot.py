@@ -53,18 +53,18 @@ def getStatus():
     with urllib.request.urlopen("https://laundry.mit.edu/watch") as url:
         data = json.loads(url.read().decode())
         laundry_status_mapping = {
-            "ON": "Busy",
-            "UNKNOWN": "Unknown",
-            "OFF": "Free",
-            "BROKEN": "Broken"
+            "On": "Busy",
+            "Uknown": "Unknown",
+            "Off": "Free",
+            "Broken": "Broken"
         }
-        washerStatus = [laundry_status_mapping[x]
+        washerStatus = [laundry_status_mapping[x["power_status"]]
                         for x in data["washers"]["status"]]
-        washerFor = [int(x/1000/60)
-                     for x in data["washers"]["sinceTransition"]]
-        dryerStatus = [laundry_status_mapping[x]
+        washerFor = [int(x["since_updated"]/1000/60)
+                     for x in data["washers"]["status"]]
+        dryerStatus = [laundry_status_mapping[x["power_status"]]
                        for x in data["dryers"]["status"]]
-        dryerFor = [int(x/1000/60) for x in data["dryers"]["sinceTransition"]]
+        dryerFor = [int(x["since_updated"]/1000/60) for x in data["dryers"]["status"]]
         washers = [f'{x[0]} for {timeToString(x[1])}' if x[0] in {
             "Busy", "Free"} else x[0] for x in zip(washerStatus, washerFor)]
         dryers = [f'{x[0]} for {timeToString(x[1])}' if x[0] in {
