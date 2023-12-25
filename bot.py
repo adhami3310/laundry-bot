@@ -234,7 +234,6 @@ async def on_message(message):
             await message.channel.send(
                 "Washers: " + ", ".join(washers) + "\n" + "Dryers: " + ", ".join(dryers)
             )
-            break
         elif content.startswith(f"{key}notify") or content.startswith(f"{key}remind"):
             machinesGroups = interpretRequest(content[len(f"{key}notify") :])
             for machines in machinesGroups:
@@ -243,17 +242,14 @@ async def on_message(message):
                 await message.channel.send(
                     f"will notify you for {' '.join(['{'+', '.join([y[0]+str(y[1]+1) for y in x])+'}' for x in machinesGroups])}!"
                 )
-            break
         elif content.startswith(f"{key}last"):
             current = datetime.now()
             await message.channel.send(
                 f"last successful update was {(current-lastUpdate).total_seconds()} seconds ago"
             )
-            break
         elif content.startswith(f"{key}cancel"):
             channelWaiting = [x for x in channelWaiting if x[1] != message.author]
             await message.channel.send("all notifications cancelled!")
-            break
         elif content.startswith(f"{key}subscribe"):
             machinesGroups = interpretRequest(content[len(f"{key}subscribe") :])
             for machines in machinesGroups:
@@ -282,7 +278,6 @@ async def on_message(message):
                 )
             else:
                 await message.channel.send(f"currently subscribed to nothing!")
-
         elif content.startswith(f"{key}show"):
             emojis = {
                 "Unknown": "<:laundry_unknown:1044357960740114592>",
@@ -298,10 +293,10 @@ async def on_message(message):
             await message.channel.send(
                 f"{emojis['Ozok']}{''.join(washers)}{endl}{endl.join(dryers)}"
             )
-            break
         elif content.startswith(f"{key}help"):
             await message.channel.send(helpMessage)
-            break
-
+        else:
+            continue
+        break
 
 client.run(TOKEN)
