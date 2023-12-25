@@ -40,8 +40,8 @@ def timeToString(time):
         time /= size
     time = int(time)
     if time == 0:
-        return "Just Now"
-    return f"{int(time)}{last_unit}"
+        return "just now"
+    return f"for {int(time)}{last_unit}"
 
 
 subscribers = {
@@ -90,11 +90,11 @@ def getStatus():
             int(x["since_updated"] / 1000 / 60) for x in data["dryers"]["status"]
         ]
         washers = [
-            f"{x[0]} for {timeToString(x[1])}" if x[0] in {"Busy", "Free"} else x[0]
+            f"{x[0]} {timeToString(x[1])}" if x[0] in {"Busy", "Free"} else x[0]
             for x in zip(washerStatus, washerFor)
         ]
         dryers = [
-            f"{x[0]} for {timeToString(x[1])}" if x[0] in {"Busy", "Free"} else x[0]
+            f"{x[0]} {timeToString(x[1])}" if x[0] in {"Busy", "Free"} else x[0]
             for x in zip(dryerStatus, dryerFor)
         ]
         return (washers, dryers)
