@@ -213,7 +213,7 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    content = message.content.lower()
+    content = message.content.lower().strip()
 
     keywords = [
         "laundry ",
@@ -225,6 +225,9 @@ async def on_message(message):
         "quinn,",
         "quinn, ",
     ]
+
+    if message.author.id == 334512450273673226 and content.startswith("hi") and content.endswith("i'm mark!"):
+        await message.channel.send("hi mark 🥺")
 
     for key in keywords:
         if content.startswith(f"{key}list") or content.startswith(f"{key}status"):
