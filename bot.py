@@ -8,7 +8,7 @@ import subprocess
 import urllib.request
 import json
 import discord
-from datetime import datetime
+from datetime import datetime, timedelta
 
 helpMessage = """Hello Randomites! I'm Quinn the Laundry Bot. I'm here to make your laundry managing easier! My prefixes are 'quinn', 'laundry', and '?'. Here's a list of my commands:
 -Say 'laundry, [list/status]' to get the status of the laundry machines currently.
@@ -54,6 +54,7 @@ subscribers = {
     ("dryer", 3): set(),
 }
 
+meds = {i: set() for i in range(24)}
 
 def subscribe(channel, group):
     global subscribers
@@ -126,7 +127,7 @@ async def statusChangedAnything(type, index, newStatus):
 
 
 async def updateStatus():
-    global washerLastStatus, dryerLastStatus, lastUpdate
+    global washerLastStatus, dryerLastStatus, lastUpdate, meds
     try:
         with urllib.request.urlopen("https://laundry.mit.edu/watch") as url:
             data = json.loads(url.read().decode())
@@ -152,7 +153,12 @@ async def updateStatus():
             lastUpdate = datetime.now()
     except:
         print("failed")
-        pass
+    
+    hour_of_day = datetime.now().hour
+    for people in meds[hour_of_day]:
+        if people[2] is None or datetime.now()-people[2] > timedelta(hours=12):
+            people[2] = datetime.now()
+            await people[1].send(f"{people[0].mention} please take your meds 🥺")
 
 
 def split(s, delim):
@@ -296,6 +302,32 @@ async def on_message(message):
             await message.channel.send(
                 f"{emojis['Ozok']}{''.join(washers)}{endl}{endl.join(dryers)}"
             )
+        elif content.startswith(f"{key}i take med"):
+            person = message.author
+            channel = message.channel
+            given_time = -1
+            try:
+               given_time = int(content[-2:].strip())
+            except:
+                given_time = -1
+            if 0 <= given_time < 24:
+                meds[given_time].add([person, channel, None])
+                await channel.send(f"will remind you!")
+            else:
+                await channel.send(f"please list the hour in 24 hour format :(")
+        elif content.startswith(f"{key}no med"):
+            person = message.author
+            channel = message.channel
+            given_time = -1
+            try:
+               given_time = int(content[-2:].strip())
+            except:
+                given_time = -1
+            if 0 <= given_time < 24:
+                meds[given_time] = [a for a in meds[given_time] if a[0] != person]
+                await channel.send(f"will stop reminding you!")
+            else:
+                await channel.send(f"please list the hour in 24 hour format :(")
         elif content.startswith(f"{key}help"):
             await message.channel.send(helpMessage)
         else:
