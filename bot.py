@@ -215,7 +215,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    global channelWaiting
+    global channelWaiting, meds
     if message.author == client.user:
         return
 
@@ -320,7 +320,7 @@ async def on_message(message):
             channel = message.channel
             given_time = -1
             try:
-               given_time = int(content[-2:].strip())
+                given_time = int(content[-2:].strip())
             except:
                 given_time = -1
             if 0 <= given_time < 24:
