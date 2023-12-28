@@ -56,6 +56,7 @@ subscribers = {
 
 meds = {i: [] for i in range(24)}
 
+
 def subscribe(channel, group):
     global subscribers
     for type, index in group:
@@ -153,10 +154,10 @@ async def updateStatus():
             lastUpdate = datetime.now()
     except:
         print("failed")
-    
+
     hour_of_day = datetime.now().hour
     for people in meds[hour_of_day]:
-        if people[2] is None or datetime.now()-people[2] > timedelta(hours=12):
+        if people[2] is None or datetime.now() - people[2] > timedelta(hours=12):
             people[2] = datetime.now()
             await people[1].send(f"{people[0].mention} please take your meds 🥺")
 
@@ -192,6 +193,23 @@ def interpretRequest(machinesGroupsString):
         )
     )
     return machinesGroups
+
+
+def get_time_from_message(message):
+    time_words = [w for w in message.split(" ") if sum(c.isdigit() for c in w) > 0]
+    if len(time_words) != 1:
+        return None
+    time_word = time_words[0].lower()
+    if time_word == "12am":
+        return 0
+    if time_word == "12pm":
+        return 12
+    additional_time = 12 if time_word.endswith("pm") else 0
+    result_time = int("".join(c for c in time_word if c.isdigit())) + additional_time
+    if 0 <= result_time < 24:
+        return result_time
+    else:
+        return None
 
 
 load_dotenv()
@@ -232,7 +250,11 @@ async def on_message(message):
         "quinn, ",
     ]
 
-    if message.author.id == 334512450273673226 and content.startswith("hi") and content.endswith("i'm mark!"):
+    if (
+        message.author.id == 334512450273673226
+        and content.startswith("hi")
+        and content.endswith("i'm mark!")
+    ):
         await message.channel.send("hi mark 🥺")
 
     for key in keywords:
@@ -305,12 +327,8 @@ async def on_message(message):
         elif content.startswith(f"{key}i take med"):
             person = message.author
             channel = message.channel
-            given_time = -1
-            try:
-               given_time = int(content[-2:].strip())
-            except:
-                given_time = -1
-            if 0 <= given_time < 24:
+            given_time = get_time_from_message(content)
+            if given_time is not None:
                 meds[given_time].append([person, channel, None])
                 await channel.send(f"will remind you!")
             else:
@@ -318,12 +336,8 @@ async def on_message(message):
         elif content.startswith(f"{key}no med"):
             person = message.author
             channel = message.channel
-            given_time = -1
-            try:
-                given_time = int(content[-2:].strip())
-            except:
-                given_time = -1
-            if 0 <= given_time < 24:
+            given_time = get_time_from_message(content)
+            if given_time is not None:
                 meds[given_time] = [a for a in meds[given_time] if a[0] != person]
                 await channel.send(f"will stop reminding you!")
             else:
@@ -333,5 +347,6 @@ async def on_message(message):
         else:
             continue
         break
+
 
 client.run(TOKEN)
