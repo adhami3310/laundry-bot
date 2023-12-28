@@ -54,7 +54,7 @@ subscribers = {
     ("dryer", 3): set(),
 }
 
-meds = {i: set() for i in range(24)}
+meds = {i: [] for i in range(24)}
 
 def subscribe(channel, group):
     global subscribers
@@ -311,7 +311,7 @@ async def on_message(message):
             except:
                 given_time = -1
             if 0 <= given_time < 24:
-                meds[given_time].add([person, channel, None])
+                meds[given_time].append([person, channel, None])
                 await channel.send(f"will remind you!")
             else:
                 await channel.send(f"please list the hour in 24 hour format :(")
